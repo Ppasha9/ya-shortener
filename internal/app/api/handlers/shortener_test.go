@@ -78,6 +78,7 @@ func TestShortenerHandler(t *testing.T) {
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 			// проверяем код ответа
 			require.Equal(t, test.respCode, res.StatusCode)
 
@@ -87,9 +88,9 @@ func TestShortenerHandler(t *testing.T) {
 				resBody, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 				splitted := strings.Split(string(resBody), "/")
-				shortUrl := splitted[len(splitted)-1]
+				shortURL := splitted[len(splitted)-1]
 
-				assert.True(t, db.IsExists(shortUrl))
+				assert.True(t, db.IsExists(shortURL))
 			}
 		})
 	}

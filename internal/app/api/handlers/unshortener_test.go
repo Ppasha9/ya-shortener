@@ -20,30 +20,30 @@ func TestUnShortenerHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		reqMethod  string
-		reqUrlID   string
-		origUrl    string
+		reqURLID   string
+		origURL    string
 		respCode   int
 		isPositive bool
 	}{
 		{
 			name:       "invalid request method",
 			reqMethod:  http.MethodPost,
-			reqUrlID:   "unknown_url_id",
+			reqURLID:   "unknown_url_id",
 			respCode:   http.StatusBadRequest,
 			isPositive: false,
 		},
 		{
 			name:       "valid request method, unknown url id",
 			reqMethod:  http.MethodGet,
-			reqUrlID:   "unknown_url_id",
+			reqURLID:   "unknown_url_id",
 			respCode:   http.StatusBadRequest,
 			isPositive: false,
 		},
 		{
 			name:       "valid request method, known url id -> 307 redirect",
 			reqMethod:  http.MethodGet,
-			reqUrlID:   "known_url_id",
-			origUrl:    "https://yandex.ru",
+			reqURLID:   "known_url_id",
+			origURL:    "https://yandex.ru",
 			respCode:   http.StatusTemporaryRedirect,
 			isPositive: true,
 		},
@@ -61,17 +61,18 @@ func TestUnShortenerHandler(t *testing.T) {
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
-			if test.origUrl != "" {
-				db.SaveURL(test.reqUrlID, test.origUrl)
+			if test.origURL != "" {
+				db.SaveURL(test.reqURLID, test.origURL)
 			}
 
-			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqUrlID, nil)
+			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 			// проверяем код ответа
 			require.Equal(t, test.respCode, res.StatusCode)
 
@@ -79,7 +80,7 @@ func TestUnShortenerHandler(t *testing.T) {
 			if test.isPositive {
 				resLoc := res.Header.Get("Location")
 				require.NotEmpty(t, resLoc)
-				assert.Equal(t, test.origUrl, resLoc)
+				assert.Equal(t, test.origURL, resLoc)
 			}
 		})
 	}
