@@ -3,8 +3,6 @@ package urlshortener
 import (
 	"math/rand"
 	"time"
-
-	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -23,12 +21,5 @@ func generateRandomString() string {
 }
 
 func MakeShortURL(origURL string) string {
-	var shortURL string
-	for {
-		shortURL = generateRandomString()
-		if exists := storage.IsExists(shortURL); !exists {
-			break
-		}
-	}
-	return shortURL
+	return generateRandomString()
 }

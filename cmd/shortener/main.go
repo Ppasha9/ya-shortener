@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Ppasha9/ya-shortener/internal/app/handlers"
+	"github.com/go-chi/chi"
+
+	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/api/handlers"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -19,14 +21,12 @@ func main() {
 func run() error {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	storage.Init()
+	s := storage.NewDatabase()
 
-	shortenerHandler := handlers.NewShortenerHandler(logger)
-	unshortenerHandler := handlers.NewUnShortenerHandler(logger)
-
-	r := mux.NewRouter()
-	r.HandleFunc("/", shortenerHandler.ServerHTTP)
-	r.HandleFunc("/{id}", unshortenerHandler.ServerHTTP)
+	r := chi.NewRouter()
+	api := api.NewApi(r, s, logger)
+	h := handlers.NewHandlers(api)
+	h.ConfigureRouter()
 
 	logger.Info("Starting shortener...")
 	err := http.ListenAndServe(`:8080`, r)

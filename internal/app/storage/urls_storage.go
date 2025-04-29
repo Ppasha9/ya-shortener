@@ -4,22 +4,29 @@ import (
 	"fmt"
 )
 
-// Глобальная переменная - хранилище сокращенных урлов
-var urlsStorage map[string]string
+type Database struct {
+	urls map[string]string
+}
 
-func Init() {
-	urlsStorage = make(map[string]string)
+func NewDatabase() *Database {
+	return &Database{
+		urls: make(map[string]string),
+	}
+}
+
+func (d *Database) Clear() {
+	d.urls = make(map[string]string)
 }
 
 // Функция для сохранения результата сокращения урла
-func SaveURL(shortURL, originalURL string) {
-	urlsStorage[shortURL] = originalURL
+func (d *Database) SaveURL(shortURL, originalURL string) {
+	d.urls[shortURL] = originalURL
 }
 
 // Функция для получения оригинального урла по сокращенному
 // Если до этого мы не сокращали урл, то вернется ошибка
-func GetOriginalURL(shortURL string) (string, error) {
-	origURL, ok := urlsStorage[shortURL]
+func (d *Database) GetOriginalURL(shortURL string) (string, error) {
+	origURL, ok := d.urls[shortURL]
 	if ok {
 		return origURL, nil
 	}
@@ -28,7 +35,7 @@ func GetOriginalURL(shortURL string) (string, error) {
 }
 
 // Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
-func IsExists(shortURL string) bool {
-	_, ok := urlsStorage[shortURL]
+func (d *Database) IsExists(shortURL string) bool {
+	_, ok := d.urls[shortURL]
 	return ok
 }
