@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,20 +22,19 @@ func main() {
 }
 
 func run() error {
-	c := config.Config{}
-	c.Parse()
+	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	s := storage.NewDatabase()
 
 	r := chi.NewRouter()
-	api := api.NewAPI(r, s, c, logger)
+	api := api.NewAPI(r, s, logger)
 	h := handlers.NewHandlers(api)
 	h.ConfigureRouter()
 
-	logger.Info("Starting shortener...")
-	err := http.ListenAndServe(c.ServerAddr, r)
+	logger.Info(fmt.Sprintf("Starting shortener on %s ...", *config.ServerAddr))
+	err := http.ListenAndServe(*config.ServerAddr, r)
 	logger.Info("Stopping shortener...")
 	return err
 }

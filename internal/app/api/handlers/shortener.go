@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/urlshortener"
 )
 
@@ -51,7 +52,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.api.Storage.SaveURL(shortURL, origURL)
 
-	shortURL = h.api.Config.BaseURL + shortURL
+	shortURL = *config.BaseURL + shortURL
 
 	h.api.Logger.Info("Generated short url", "orig_url", origURL, "short_url", shortURL)
 

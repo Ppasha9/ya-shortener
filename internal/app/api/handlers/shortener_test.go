@@ -17,9 +17,7 @@ import (
 )
 
 func TestShortenerHandler(t *testing.T) {
-	config := config.Config{
-		BaseURL: "http://baseurl/",
-	}
+	*config.BaseURL = "http://baseurl/"
 	db := storage.NewDatabase()
 
 	tests := []struct {
@@ -69,7 +67,7 @@ func TestShortenerHandler(t *testing.T) {
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, config, logger)
+			api := api.NewAPI(r, db, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -92,7 +90,7 @@ func TestShortenerHandler(t *testing.T) {
 				require.NoError(t, err)
 
 				resURL := string(resBody)
-				require.True(t, strings.HasPrefix(resURL, config.BaseURL))
+				require.True(t, strings.HasPrefix(resURL, *config.BaseURL))
 
 				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
