@@ -9,6 +9,7 @@ import (
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/api/handlers"
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 )
 
@@ -19,17 +20,20 @@ func main() {
 }
 
 func run() error {
+	c := config.Config{}
+	c.Parse()
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	s := storage.NewDatabase()
 
 	r := chi.NewRouter()
-	api := api.NewAPI(r, s, logger)
+	api := api.NewAPI(r, s, c, logger)
 	h := handlers.NewHandlers(api)
 	h.ConfigureRouter()
 
 	logger.Info("Starting shortener...")
-	err := http.ListenAndServe(`:8080`, r)
+	err := http.ListenAndServe(c.ServerAddr, r)
 	logger.Info("Stopping shortener...")
 	return err
 }

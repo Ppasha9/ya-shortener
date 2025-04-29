@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestUnShortenerHandler(t *testing.T) {
+	config := config.Config{}
 	db := storage.NewDatabase()
 
 	tests := []struct {
@@ -57,7 +59,7 @@ func TestUnShortenerHandler(t *testing.T) {
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, logger)
+			api := api.NewAPI(r, db, config, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 

@@ -10,13 +10,16 @@ import (
 	"testing"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestShortenerHandler(t *testing.T) {
+	config := config.Config{
+		BaseURL: "http://baseurl/",
+	}
 	db := storage.NewDatabase()
 
 	tests := []struct {
@@ -66,7 +69,7 @@ func TestShortenerHandler(t *testing.T) {
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, logger)
+			api := api.NewAPI(r, db, config, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -87,10 +90,14 @@ func TestShortenerHandler(t *testing.T) {
 				// получаем short_url из тела ответа
 				resBody, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
-				splitted := strings.Split(string(resBody), "/")
+
+				resURL := string(resBody)
+				require.True(t, strings.HasPrefix(resURL, config.BaseURL))
+
+				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				assert.True(t, db.IsExists(shortURL))
+				require.True(t, db.IsExists(shortURL))
 			}
 		})
 	}
