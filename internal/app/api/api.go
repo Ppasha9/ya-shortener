@@ -8,14 +8,14 @@ import (
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 )
 
-type Api struct {
+type API struct {
 	Router  *chi.Mux
 	Storage *storage.Database
 	Logger  *slog.Logger
 }
 
-func NewApi(r *chi.Mux, s *storage.Database, l *slog.Logger) *Api {
-	api := &Api{
+func NewAPI(r *chi.Mux, s *storage.Database, l *slog.Logger) *API {
+	api := &API{
 		Router:  r,
 		Storage: s,
 		Logger:  l,

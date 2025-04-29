@@ -5,10 +5,10 @@ import (
 )
 
 type handlers struct {
-	api *api.Api
+	api *api.API
 }
 
-func NewHandlers(a *api.Api) *handlers {
+func NewHandlers(a *api.API) *handlers {
 	return &handlers{
 		api: a,
 	}

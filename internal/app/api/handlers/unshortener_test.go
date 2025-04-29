@@ -57,7 +57,7 @@ func TestUnShortenerHandler(t *testing.T) {
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewApi(r, db, logger)
+			api := api.NewAPI(r, db, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 

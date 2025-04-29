@@ -24,7 +24,7 @@ func run() error {
 	s := storage.NewDatabase()
 
 	r := chi.NewRouter()
-	api := api.NewApi(r, s, logger)
+	api := api.NewAPI(r, s, logger)
 	h := handlers.NewHandlers(api)
 	h.ConfigureRouter()
 
