@@ -23,6 +23,7 @@ func main() {
 
 func run() error {
 	flag.Parse()
+	config.ParseArgs()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
