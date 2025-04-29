@@ -17,7 +17,7 @@ import (
 )
 
 func TestShortenerHandler(t *testing.T) {
-	*config.BaseURL = "http://baseurl/"
+	*config.BaseURL = "http://baseurl"
 	db := storage.NewDatabase()
 
 	tests := []struct {

@@ -52,7 +52,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.api.Storage.SaveURL(shortURL, origURL)
 
-	shortURL = *config.BaseURL + shortURL
+	shortURL = *config.BaseURL + "/" + shortURL
 
 	h.api.Logger.Info("Generated short url", "orig_url", origURL, "short_url", shortURL)
 
