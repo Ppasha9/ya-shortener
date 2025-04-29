@@ -14,6 +14,8 @@ type UnShortenerHandler struct {
 }
 
 func (h UnShortenerHandler) ServerHTTP(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Info("Incoming GET unshortener request")
+
 	if r.Method != http.MethodGet {
 		// Принимаем только GET запросы
 		h.Logger.Error("Invalid method", "method", r.Method)
@@ -29,12 +31,16 @@ func (h UnShortenerHandler) ServerHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.Logger.Info("Getting original url by url_id", "url_id", urlID)
+
 	origURL, err := storage.GetOriginalURL(urlID)
 	if err != nil {
 		h.Logger.Error("Failed to get original url by url id", "err", err.Error())
 		http.Error(w, "Failed to get original url by url id", http.StatusBadRequest)
 		return
 	}
+
+	h.Logger.Info("Got original url by url_id", "url_id", urlID, "orig_url", origURL)
 
 	w.Header().Add("Location", origURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)

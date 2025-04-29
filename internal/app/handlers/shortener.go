@@ -15,6 +15,8 @@ type ShortenerHandler struct {
 }
 
 func (h ShortenerHandler) ServerHTTP(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Info("Incoming POST shortener request")
+
 	if r.Method != http.MethodPost {
 		// Принимаем только POST запросы
 		h.Logger.Error("Invalid method", "method", r.Method)
@@ -24,7 +26,7 @@ func (h ShortenerHandler) ServerHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Проверяем наличие хэдэра Content-Type и его значение
 	ctHeader := r.Header.Get("Content-Type")
-	if ctHeader != "text/plain" {
+	if !strings.Contains(ctHeader, "text/plain") {
 		h.Logger.Error("Invalid Content-Type header", "header_value", ctHeader)
 		http.Error(w, "Invalid Content-Type header", http.StatusBadRequest)
 		return
@@ -44,14 +46,17 @@ func (h ShortenerHandler) ServerHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.Logger.Info("Generating short url", "orig_url", origURL)
+
 	shortURL := urlshortener.MakeShortURL(origURL)
 	storage.SaveURL(shortURL, origURL)
 
 	shortURL = "http://localhost:8080/" + shortURL
 
-	w.Header().Add("Content-Type", "text/plain")
-	w.Write([]byte(shortURL))
+	h.Logger.Info("Generated short url", "orig_url", origURL, "short_url", shortURL)
+
 	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(shortURL))
 }
 
 func NewShortenerHandler(logger *slog.Logger) ShortenerHandler {
