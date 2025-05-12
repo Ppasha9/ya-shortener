@@ -1,0 +1,87 @@
+package handlers
+
+import (
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
+	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/storage"
+	"github.com/go-chi/chi"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestUnShortenerHandler(t *testing.T) {
+	db := storage.NewDatabase()
+
+	tests := []struct {
+		name       string
+		reqMethod  string
+		reqURLID   string
+		origURL    string
+		respCode   int
+		isPositive bool
+	}{
+		{
+			name:       "invalid request method",
+			reqMethod:  http.MethodPost,
+			reqURLID:   "unknown_url_id",
+			respCode:   http.StatusBadRequest,
+			isPositive: false,
+		},
+		{
+			name:       "valid request method, unknown url id",
+			reqMethod:  http.MethodGet,
+			reqURLID:   "unknown_url_id",
+			respCode:   http.StatusBadRequest,
+			isPositive: false,
+		},
+		{
+			name:       "valid request method, known url id -> 307 redirect",
+			reqMethod:  http.MethodGet,
+			reqURLID:   "known_url_id",
+			origURL:    "https://yandex.ru",
+			respCode:   http.StatusTemporaryRedirect,
+			isPositive: true,
+		},
+	}
+
+	for _, test := range tests {
+		db.Clear()
+
+		t.Run(test.name, func(t *testing.T) {
+			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+			// инициализируем api
+			r := chi.NewRouter()
+			api := api.NewAPI(r, db, logger)
+			h := NewHandlers(api)
+			h.ConfigureRouter()
+
+			if test.origURL != "" {
+				db.SaveURL(test.reqURLID, test.origURL)
+			}
+
+			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
+
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			api.Router.ServeHTTP(w, request)
+
+			res := w.Result()
+			defer res.Body.Close()
+			// проверяем код ответа
+			require.Equal(t, test.respCode, res.StatusCode)
+
+			// проверяем значение хэдэра Location в ответе
+			if test.isPositive {
+				resLoc := res.Header.Get("Location")
+				require.NotEmpty(t, resLoc)
+				assert.Equal(t, test.origURL, resLoc)
+			}
+		})
+	}
+}
