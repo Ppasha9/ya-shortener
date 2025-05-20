@@ -70,6 +70,14 @@ func WithCompress(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 
+		contentType := r.Header.Get("Content-Type")
+		supportCompressType := strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")
+
+		if !supportCompressType {
+			h.ServeHTTP(ow, r)
+			return
+		}
+
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
