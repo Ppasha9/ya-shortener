@@ -20,7 +20,8 @@ import (
 
 func TestShortenerHandler(t *testing.T) {
 	*config.BaseURL = "http://baseurl"
-	st := storage.NewInMemoryStorage()
+	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name           string
@@ -105,7 +106,8 @@ func TestShortenerHandler(t *testing.T) {
 
 func TestShortenHandler(t *testing.T) {
 	*config.BaseURL = "http://baseurl"
-	st := storage.NewInMemoryStorage()
+	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name           string

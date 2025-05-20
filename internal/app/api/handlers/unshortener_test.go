@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,8 @@ import (
 )
 
 func TestUnShortenerHandler(t *testing.T) {
-	st := storage.NewInMemoryStorage()
+	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name       string

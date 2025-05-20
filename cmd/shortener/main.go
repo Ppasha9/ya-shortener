@@ -27,7 +27,11 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	s := storage.NewInMemoryStorage()
+	s, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+	if err != nil {
+		logger.Error("cannot open file storage file", "err", err.Error())
+		return err
+	}
 
 	r := chi.NewRouter()
 	api := api.NewAPI(r, s, logger)
@@ -35,7 +39,8 @@ func run() error {
 	h.ConfigureRouter()
 
 	logger.Info(fmt.Sprintf("Starting shortener on %s ...", *config.ServerAddr))
-	err := http.ListenAndServe(*config.ServerAddr, r)
+	err = http.ListenAndServe(*config.ServerAddr, r)
 	logger.Info("Stopping shortener...")
+
 	return err
 }
