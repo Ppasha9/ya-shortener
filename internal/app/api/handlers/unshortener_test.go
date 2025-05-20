@@ -15,7 +15,7 @@ import (
 )
 
 func TestUnShortenerHandler(t *testing.T) {
-	db := storage.NewDatabase()
+	st := storage.NewInMemoryStorage()
 
 	tests := []struct {
 		name       string
@@ -50,19 +50,19 @@ func TestUnShortenerHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db.Clear()
+		st.Clear()
 
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, logger)
+			api := api.NewAPI(r, st, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
 			if test.origURL != "" {
-				db.SaveURL(test.reqURLID, test.origURL)
+				st.SaveURL(test.reqURLID, test.origURL)
 			}
 
 			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)

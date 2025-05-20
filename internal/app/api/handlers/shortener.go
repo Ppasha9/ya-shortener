@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
-	"github.com/Ppasha9/ya-shortener/internal/app/urlshortener"
 )
 
 func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +14,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		// Принимаем только POST запросы
 		h.api.Logger.Error("Invalid method", "method", r.Method)
-		http.Error(w, "Invalid method", http.StatusBadRequest)
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -42,15 +41,12 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
-
-	var shortURL string
-	for {
-		shortURL = urlshortener.MakeShortURL(origURL)
-		if exists := h.api.Storage.IsExists(shortURL); !exists {
-			break
-		}
+	shortURL, err := h.api.Service.MakeShortURL(origURL)
+	if err != nil {
+		h.api.Logger.Error("Failed to generate short url", "req_body", origURL)
+		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
+		return
 	}
-	h.api.Storage.SaveURL(shortURL, origURL)
 
 	shortURL = *config.BaseURL + "/" + shortURL
 

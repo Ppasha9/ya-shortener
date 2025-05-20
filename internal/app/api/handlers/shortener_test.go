@@ -18,7 +18,7 @@ import (
 
 func TestShortenerHandler(t *testing.T) {
 	*config.BaseURL = "http://baseurl"
-	db := storage.NewDatabase()
+	st := storage.NewInMemoryStorage()
 
 	tests := []struct {
 		name           string
@@ -60,14 +60,14 @@ func TestShortenerHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db.Clear()
+		st.Clear()
 
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, logger)
+			api := api.NewAPI(r, st, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -95,7 +95,7 @@ func TestShortenerHandler(t *testing.T) {
 				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				require.True(t, db.IsExists(shortURL))
+				require.True(t, st.IsExists(shortURL))
 			}
 		})
 	}

@@ -27,7 +27,7 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	s := storage.NewDatabase()
+	s := storage.NewInMemoryStorage()
 
 	r := chi.NewRouter()
 	api := api.NewAPI(r, s, logger)

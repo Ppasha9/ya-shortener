@@ -2,30 +2,36 @@ package storage
 
 import (
 	"fmt"
+	"sync"
 )
 
-type Database struct {
+var StorageMutex sync.RWMutex
+
+type InMemoryStorage struct {
 	urls map[string]string
 }
 
-func NewDatabase() *Database {
-	return &Database{
+func NewInMemoryStorage() *InMemoryStorage {
+	return &InMemoryStorage{
 		urls: make(map[string]string),
 	}
 }
 
-func (d *Database) Clear() {
+func (d *InMemoryStorage) Clear() {
 	d.urls = make(map[string]string)
 }
 
 // Функция для сохранения результата сокращения урла
-func (d *Database) SaveURL(shortURL, originalURL string) {
+func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
+	StorageMutex.Lock()
 	d.urls[shortURL] = originalURL
+	StorageMutex.Unlock()
+	return nil
 }
 
 // Функция для получения оригинального урла по сокращенному
 // Если до этого мы не сокращали урл, то вернется ошибка
-func (d *Database) GetOriginalURL(shortURL string) (string, error) {
+func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
 	origURL, ok := d.urls[shortURL]
 	if ok {
 		return origURL, nil
@@ -35,7 +41,7 @@ func (d *Database) GetOriginalURL(shortURL string) (string, error) {
 }
 
 // Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
-func (d *Database) IsExists(shortURL string) bool {
+func (d *InMemoryStorage) IsExists(shortURL string) bool {
 	_, ok := d.urls[shortURL]
 	return ok
 }

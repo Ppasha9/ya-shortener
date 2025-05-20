@@ -12,7 +12,7 @@ func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		// Принимаем только GET запросы
 		h.api.Logger.Error("Invalid method", "method", r.Method)
-		http.Error(w, "Invalid method", http.StatusBadRequest)
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -25,10 +25,10 @@ func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.api.Logger.Info("Getting original url by url_id", "url_id", urlID)
 
-	origURL, err := h.api.Storage.GetOriginalURL(urlID)
+	origURL, err := h.api.Service.GetOriginalURL(urlID)
 	if err != nil {
 		h.api.Logger.Error("Failed to get original url by url id", "err", err.Error())
-		http.Error(w, "Failed to get original url by url id", http.StatusBadRequest)
+		http.Error(w, "Failed to get original url by url id", http.StatusInternalServerError)
 		return
 	}
 
