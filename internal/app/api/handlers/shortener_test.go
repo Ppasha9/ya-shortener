@@ -31,7 +31,7 @@ func TestShortenerHandler(t *testing.T) {
 		{
 			name:       "invalid request method",
 			reqMethod:  http.MethodGet,
-			respCode:   http.StatusBadRequest,
+			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
 		{

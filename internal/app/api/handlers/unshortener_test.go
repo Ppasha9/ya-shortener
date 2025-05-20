@@ -29,14 +29,14 @@ func TestUnShortenerHandler(t *testing.T) {
 			name:       "invalid request method",
 			reqMethod:  http.MethodPost,
 			reqURLID:   "unknown_url_id",
-			respCode:   http.StatusBadRequest,
+			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
 		{
 			name:       "valid request method, unknown url id",
 			reqMethod:  http.MethodGet,
 			reqURLID:   "unknown_url_id",
-			respCode:   http.StatusBadRequest,
+			respCode:   http.StatusInternalServerError,
 			isPositive: false,
 		},
 		{
