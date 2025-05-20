@@ -26,7 +26,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Проверяем наличие хэдэра Content-Type и его значение
 	ctHeader := r.Header.Get("Content-Type")
-	if !strings.Contains(ctHeader, "text/plain") {
+	if !strings.Contains(ctHeader, "text/plain") && !strings.Contains(ctHeader, "application/x-gzip") {
 		h.api.Logger.Error("Invalid Content-Type header", "header_value", ctHeader)
 		http.Error(w, "Invalid Content-Type header", http.StatusUnsupportedMediaType)
 		return
@@ -74,7 +74,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Проверяем наличие хэдэра Content-Type и его значение
 	ctHeader := r.Header.Get("Content-Type")
-	if !strings.Contains(ctHeader, "application/json") {
+	if !strings.Contains(ctHeader, "application/json") && !strings.Contains(ctHeader, "application/x-gzip") {
 		h.api.Logger.Error("Invalid Content-Type header", "header_value", ctHeader)
 		http.Error(w, "Invalid Content-Type header", http.StatusUnsupportedMediaType)
 		return
