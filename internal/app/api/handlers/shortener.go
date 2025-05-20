@@ -124,6 +124,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add(`Content-Type`, `application/json`)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(respBody)
 }
