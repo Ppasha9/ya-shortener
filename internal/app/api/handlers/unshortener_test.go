@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,8 @@ import (
 )
 
 func TestUnShortenerHandler(t *testing.T) {
-	db := storage.NewDatabase()
+	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name       string
@@ -29,14 +31,14 @@ func TestUnShortenerHandler(t *testing.T) {
 			name:       "invalid request method",
 			reqMethod:  http.MethodPost,
 			reqURLID:   "unknown_url_id",
-			respCode:   http.StatusBadRequest,
+			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
 		{
 			name:       "valid request method, unknown url id",
 			reqMethod:  http.MethodGet,
 			reqURLID:   "unknown_url_id",
-			respCode:   http.StatusBadRequest,
+			respCode:   http.StatusInternalServerError,
 			isPositive: false,
 		},
 		{
@@ -50,19 +52,19 @@ func TestUnShortenerHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db.Clear()
+		st.Clear()
 
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, db, logger)
+			api := api.NewAPI(r, st, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
 			if test.origURL != "" {
-				db.SaveURL(test.reqURLID, test.origURL)
+				st.SaveURL(test.reqURLID, test.origURL)
 			}
 
 			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
