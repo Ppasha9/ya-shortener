@@ -62,6 +62,7 @@ func (d *InMemoryStorage) Clear() {
 // Функция для сохранения результата сокращения урла
 func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
 	StorageMutex.Lock()
+	defer StorageMutex.Unlock()
 
 	// сохранили в inmemory мапку
 	d.urls[shortURL] = originalURL
@@ -82,14 +83,15 @@ func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
 		return err
 	}
 
-	StorageMutex.Unlock()
 	return nil
 }
 
 // Функция для получения оригинального урла по сокращенному
 // Если до этого мы не сокращали урл, то вернется ошибка
 func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
+	StorageMutex.Lock()
 	origURL, ok := d.urls[shortURL]
+	StorageMutex.Unlock()
 	if ok {
 		return origURL, nil
 	}
@@ -99,6 +101,8 @@ func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
 
 // Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
 func (d *InMemoryStorage) IsExists(shortURL string) bool {
+	StorageMutex.Lock()
 	_, ok := d.urls[shortURL]
+	StorageMutex.Unlock()
 	return ok
 }
