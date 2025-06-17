@@ -27,4 +27,5 @@ func (h *handlers) ConfigureRouter() {
 
 	// Хэндлеры третьего спринта
 	h.api.Router.Handle("/ping", middleware.WithLogging(http.HandlerFunc(h.PingHandler), h.api.Logger))
+	h.api.Router.Handle("/api/shorten/batch", middleware.WithLogging(middleware.WithCompress(http.HandlerFunc(h.ShortenBatchHandler)), h.api.Logger))
 }

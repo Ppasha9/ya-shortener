@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
 var StorageMutex sync.RWMutex
@@ -60,14 +62,7 @@ func (d *InMemoryStorage) Clear() {
 	d.urls = make(map[string]string)
 }
 
-func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
-	StorageMutex.Lock()
-	defer StorageMutex.Unlock()
-
-	// сохранили в inmemory мапку
-	d.urls[shortURL] = originalURL
-
-	// далее всю мапку сохраняем в файлик
+func (d *InMemoryStorage) writeStorageToFile() error {
 	fs := FileStorage{
 		Items: make([]FileStorageItem, 0),
 	}
@@ -82,8 +77,31 @@ func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL str
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
+	StorageMutex.Lock()
+	defer StorageMutex.Unlock()
+
+	// сохранили в inmemory мапку
+	d.urls[shortURL] = originalURL
+
+	// далее всю мапку сохраняем в файлик
+	return d.writeStorageToFile()
+}
+
+func (d *InMemoryStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) error {
+	StorageMutex.Lock()
+	defer StorageMutex.Unlock()
+
+	// сохранили в inmemory мапку
+	for _, u := range urls {
+		d.urls[u.ShortURL] = u.OrigURL
+	}
+
+	// далее всю мапку сохраняем в файлик
+	return d.writeStorageToFile()
 }
 
 func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/Ppasha9/ya-shortener/internal/app/model"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -34,6 +35,26 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 func (db *DatabaseStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
 	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl) VALUES ($1, $2);", shortURL, originalURL)
 	return err
+}
+
+func (db *DatabaseStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) error {
+	// начинаем транзакцию
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range urls {
+		_, err := tx.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl) VALUES ($1, $2);", v.ShortURL, v.OrigURL)
+		if err != nil {
+			// если ошибка, то откатываем изменения
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// завершаем транзакцию
+	return tx.Commit()
 }
 
 func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {

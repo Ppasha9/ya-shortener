@@ -1,10 +1,17 @@
 package storage
 
-import "context"
+import (
+	"context"
+
+	"github.com/Ppasha9/ya-shortener/internal/app/model"
+)
 
 type Storage interface {
 	// Функция для сохранения результата сокращения урла
 	SaveURL(ctx context.Context, shortURL, originalURL string) error
+
+	// Функция для сохранения результата сокращения нескольких урлов
+	SaveURLs(ctx context.Context, urls []model.URLsPair) error
 
 	// Функция для получения оригинального урла по сокращенному
 	// Если до этого мы не сокращали урл, то вернется ошибка
