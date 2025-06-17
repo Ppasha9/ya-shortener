@@ -32,13 +32,13 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 }
 
 func (db *DatabaseStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
-	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl) VALUES (?, ?);", shortURL, originalURL)
+	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl) VALUES ($1, $2);", shortURL, originalURL)
 	return err
 }
 
 func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	err := db.DB.QueryRowContext(ctx, "SELECT origurl FROM shorturls WHERE shorturl = ?;", shortURL).Scan(&origURL)
+	err := db.DB.QueryRowContext(ctx, "SELECT origurl FROM shorturls WHERE shorturl = $1;", shortURL).Scan(&origURL)
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +48,7 @@ func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) 
 
 func (db *DatabaseStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
 	var exists bool
-	err := db.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM shorturls WHERE shorturl = ?);", shortURL).Scan(&exists)
+	err := db.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM shorturls WHERE shorturl = $1);", shortURL).Scan(&exists)
 	if err != nil {
 		return false, err
 	}

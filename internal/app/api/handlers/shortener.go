@@ -49,7 +49,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_body", origURL)
+		h.api.Logger.Error("Failed to generate short url", "req_body", origURL, "err", err.Error())
 		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
 		return
 	}
@@ -105,7 +105,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_url", origURL)
+		h.api.Logger.Error("Failed to generate short url", "req_url", origURL, "err", err.Error())
 		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
 		return
 	}
