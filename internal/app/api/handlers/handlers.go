@@ -24,4 +24,7 @@ func (h *handlers) ConfigureRouter() {
 
 	// Хэндлеры второго спринта
 	h.api.Router.Handle("/api/shorten", middleware.WithLogging(middleware.WithCompress(http.HandlerFunc(h.ShortenHandler)), h.api.Logger))
+
+	// Хэндлеры третьего спринта
+	h.api.Router.Handle("/ping", middleware.WithLogging(http.HandlerFunc(h.PingHandler), h.api.Logger))
 }
