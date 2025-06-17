@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 
+	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
@@ -80,15 +81,22 @@ func (d *InMemoryStorage) writeStorageToFile() error {
 	return nil
 }
 
-func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
+func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) (string, error) {
 	StorageMutex.Lock()
 	defer StorageMutex.Unlock()
+
+	// Проверяем, что пытаемся получить укороченный урл того урла, который уже сокращали до этого
+	for s, o := range d.urls {
+		if o == originalURL {
+			return s, serviceerrors.ORIG_URL_DUPLICATE
+		}
+	}
 
 	// сохранили в inmemory мапку
 	d.urls[shortURL] = originalURL
 
 	// далее всю мапку сохраняем в файлик
-	return d.writeStorageToFile()
+	return shortURL, d.writeStorageToFile()
 }
 
 func (d *InMemoryStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) error {

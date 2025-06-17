@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
@@ -48,18 +50,24 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
+	statusCode := http.StatusCreated
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_body", origURL, "err", err.Error())
-		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
-		return
+		if errors.Is(err, serviceerrors.ORIG_URL_DUPLICATE) {
+			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
+			statusCode = http.StatusConflict
+		} else {
+			h.api.Logger.Error("Failed to generate short url", "req_body", origURL, "err", err.Error())
+			http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	shortURL = *config.BaseURL + "/" + shortURL
 
 	h.api.Logger.Info("Generated short url", "orig_url", origURL, "short_url", shortURL)
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write([]byte(shortURL))
 }
 
@@ -104,11 +112,17 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
+	statusCode := http.StatusCreated
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_url", origURL, "err", err.Error())
-		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
-		return
+		if errors.Is(err, serviceerrors.ORIG_URL_DUPLICATE) {
+			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
+			statusCode = http.StatusConflict
+		} else {
+			h.api.Logger.Error("Failed to generate short url", "req_url", origURL, "err", err.Error())
+			http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	shortURL = *config.BaseURL + "/" + shortURL
@@ -126,7 +140,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write(respBody)
 }
 

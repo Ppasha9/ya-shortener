@@ -8,7 +8,7 @@ import (
 
 type Storage interface {
 	// Функция для сохранения результата сокращения урла
-	SaveURL(ctx context.Context, shortURL, originalURL string) error
+	SaveURL(ctx context.Context, shortURL, originalURL string) (string, error)
 
 	// Функция для сохранения результата сокращения нескольких урлов
 	SaveURLs(ctx context.Context, urls []model.URLsPair) error

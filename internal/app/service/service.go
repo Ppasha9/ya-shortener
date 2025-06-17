@@ -30,7 +30,7 @@ func (s *Service) MakeShortURL(ctx context.Context, origURL string) (string, err
 			break
 		}
 	}
-	err := s.Storage.SaveURL(ctx, shortURL, origURL)
+	shortURL, err := s.Storage.SaveURL(ctx, shortURL, origURL)
 	return shortURL, err
 }
 
