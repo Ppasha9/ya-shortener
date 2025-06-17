@@ -53,7 +53,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	statusCode := http.StatusCreated
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		if errors.Is(err, serviceerrors.ORIG_URL_DUPLICATE) {
+		if errors.Is(err, serviceerrors.ErrOrigURLDuplicate) {
 			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
 			statusCode = http.StatusConflict
 		} else {
@@ -115,7 +115,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	statusCode := http.StatusCreated
 	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		if errors.Is(err, serviceerrors.ORIG_URL_DUPLICATE) {
+		if errors.Is(err, serviceerrors.ErrOrigURLDuplicate) {
 			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
 			statusCode = http.StatusConflict
 		} else {

@@ -88,7 +88,7 @@ func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL str
 	// Проверяем, что пытаемся получить укороченный урл того урла, который уже сокращали до этого
 	for s, o := range d.urls {
 		if o == originalURL {
-			return s, serviceerrors.ORIG_URL_DUPLICATE
+			return s, serviceerrors.ErrOrigURLDuplicate
 		}
 	}
 

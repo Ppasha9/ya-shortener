@@ -44,6 +44,9 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 
 	// Создаем уникальный индекс на поле с исходным урлом
 	_, err = dbConn.Exec("CREATE UNIQUE INDEX unique_orig_url_idx ON shorturls (origurl);")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create unique index: %w", err)
+	}
 
 	return &DatabaseStorage{dbConn}, nil
 }
@@ -55,7 +58,7 @@ func (db *DatabaseStorage) SaveURL(ctx context.Context, shortURL, originalURL st
 		if err != nil {
 			return shortURL, err
 		}
-		return shortURL, serviceerrors.ORIG_URL_DUPLICATE
+		return shortURL, serviceerrors.ErrOrigURLDuplicate
 	}
 	return shortURL, err
 }
