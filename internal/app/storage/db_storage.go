@@ -23,24 +23,22 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 	}
 
 	// Создаем таблицу shorturls, если ее нет
-	_, err = dbConn.Exec(`
-		CREATE TABLE IF NOT EXISTS shorturls (
-			short_url VARCHAR(8) PRIMARY KEY,
-			orig_url TEXT NOT NULL,
-		);
-	`)
+	_, err = dbConn.Exec("CREATE TABLE IF NOT EXISTS shorturls (shorturl VARCHAR(8) PRIMARY KEY, origurl TEXT NOT NULL);")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create table: %w", err)
+	}
 
 	return &DatabaseStorage{dbConn}, nil
 }
 
 func (db *DatabaseStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
-	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (short_url, orig_url) VALUES (?, ?);", shortURL, originalURL)
+	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl) VALUES (?, ?);", shortURL, originalURL)
 	return err
 }
 
 func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	err := db.DB.QueryRowContext(ctx, "SELECT orig_url FROM shorturls WHERE short_url = ?;", shortURL).Scan(&origURL)
+	err := db.DB.QueryRowContext(ctx, "SELECT origurl FROM shorturls WHERE shorturl = ?;", shortURL).Scan(&origURL)
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +48,7 @@ func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) 
 
 func (db *DatabaseStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
 	var exists bool
-	err := db.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM shorturls WHERE short_url = ?);", shortURL).Scan(&exists)
+	err := db.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM shorturls WHERE shorturl = ?);", shortURL).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
