@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,8 +60,7 @@ func (d *InMemoryStorage) Clear() {
 	d.urls = make(map[string]string)
 }
 
-// Функция для сохранения результата сокращения урла
-func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
+func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) error {
 	StorageMutex.Lock()
 	defer StorageMutex.Unlock()
 
@@ -86,9 +86,7 @@ func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
 	return nil
 }
 
-// Функция для получения оригинального урла по сокращенному
-// Если до этого мы не сокращали урл, то вернется ошибка
-func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
+func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	StorageMutex.Lock()
 	origURL, ok := d.urls[shortURL]
 	StorageMutex.Unlock()
@@ -99,10 +97,13 @@ func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
 	return origURL, fmt.Errorf("failed to find original url by short url = %s", shortURL)
 }
 
-// Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
-func (d *InMemoryStorage) IsExists(shortURL string) bool {
+func (d *InMemoryStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
 	StorageMutex.Lock()
 	_, ok := d.urls[shortURL]
 	StorageMutex.Unlock()
-	return ok
+	return ok, nil
+}
+
+func (d *InMemoryStorage) Close() error {
+	return nil
 }

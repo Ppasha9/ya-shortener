@@ -1,32 +1,38 @@
 package service
 
 import (
+	"context"
+
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/Ppasha9/ya-shortener/internal/app/urlshortener"
 )
 
 type Service struct {
-	Storage *storage.InMemoryStorage
+	Storage storage.Storage
 }
 
-func NewService(s *storage.InMemoryStorage) *Service {
+func NewService(s storage.Storage) *Service {
 	return &Service{
 		Storage: s,
 	}
 }
 
-func (s *Service) MakeShortURL(origURL string) (string, error) {
+func (s *Service) MakeShortURL(ctx context.Context, origURL string) (string, error) {
 	var shortURL string
 	for {
 		shortURL = urlshortener.MakeShortURL(origURL)
-		if exists := s.Storage.IsExists(shortURL); !exists {
+		exists, err := s.Storage.IsExists(ctx, shortURL)
+		if err != nil {
+			return shortURL, err
+		}
+		if !exists {
 			break
 		}
 	}
-	err := s.Storage.SaveURL(shortURL, origURL)
+	err := s.Storage.SaveURL(ctx, shortURL, origURL)
 	return shortURL, err
 }
 
-func (s *Service) GetOriginalURL(shortURL string) (string, error) {
-	return s.Storage.GetOriginalURL(shortURL)
+func (s *Service) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return s.Storage.GetOriginalURL(ctx, shortURL)
 }

@@ -9,7 +9,7 @@ var (
 	ServerAddr      = flag.String("a", ":8080", "address and port to run server")
 	BaseURL         = flag.String("b", "http://localhost:8080", "base url for returning short urls")
 	FileStoragePath = flag.String("f", "storage.json", "path to the urls storage file")
-	DatabaseDSN     = flag.String("d", "host=127.0.0.1 user=postgres dbname=urls sslmode=disable", "DSN for PostgreSQL DB")
+	DatabaseDSN     = flag.String("d", "", "DSN for PostgreSQL DB")
 )
 
 func ParseArgs() {

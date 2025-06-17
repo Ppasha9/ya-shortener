@@ -18,7 +18,7 @@ func (h *handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Пытаемся создать соединение с БД
-	db, err := storage.OpenDB(*config.DatabaseDSN)
+	db, err := storage.NewDatabase(*config.DatabaseDSN)
 	if err != nil {
 		h.api.Logger.Error("Cannot create DB connection", "err", err.Error())
 		http.Error(w, "Cannot create DB connection", http.StatusInternalServerError)

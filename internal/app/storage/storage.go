@@ -1,24 +1,17 @@
 package storage
 
-import (
-	"database/sql"
+import "context"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-)
+type Storage interface {
+	// Функция для сохранения результата сокращения урла
+	SaveURL(ctx context.Context, shortURL, originalURL string) error
 
-type Database struct {
-	DB *sql.DB
-}
+	// Функция для получения оригинального урла по сокращенному
+	// Если до этого мы не сокращали урл, то вернется ошибка
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
 
-func OpenDB(conn string) (*Database, error) {
-	dbConn, err := sql.Open("pgx", conn)
-	if err != nil {
-		return nil, err
-	}
+	// Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
+	IsExists(ctx context.Context, shortURL string) (bool, error)
 
-	return &Database{dbConn}, nil
-}
-
-func (db *Database) Close() error {
-	return db.DB.Close()
+	Close() error
 }
