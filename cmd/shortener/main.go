@@ -27,19 +27,31 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	s, err := storage.NewInMemoryStorage(*config.FileStoragePath)
-	if err != nil {
-		logger.Error("cannot open file storage file", "err", err.Error())
-		return err
-	}
-
+	var a *api.API
 	r := chi.NewRouter()
-	api := api.NewAPI(r, s, logger)
-	h := handlers.NewHandlers(api)
+
+	if *config.DatabaseDSN == "" {
+		memStorage, err := storage.NewInMemoryStorage(*config.FileStoragePath)
+		if err != nil {
+			logger.Error("cannot open file storage file", "err", err.Error())
+			return err
+		}
+		a = api.NewAPI(r, memStorage, logger)
+	} else {
+		dbStorage, err := storage.NewDatabase(*config.DatabaseDSN)
+		if err != nil {
+			logger.Error("cannot open db storage connection", "err", err.Error())
+			return err
+		}
+		a = api.NewAPI(r, dbStorage, logger)
+	}
+	defer a.Service.Storage.Close()
+
+	h := handlers.NewHandlers(a)
 	h.ConfigureRouter()
 
 	logger.Info(fmt.Sprintf("Starting shortener on %s ...", *config.ServerAddr))
-	err = http.ListenAndServe(*config.ServerAddr, r)
+	err := http.ListenAndServe(*config.ServerAddr, r)
 	logger.Info("Stopping shortener...")
 
 	return err

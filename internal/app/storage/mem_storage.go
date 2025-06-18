@@ -1,12 +1,16 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"sync"
+
+	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
+	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
 var StorageMutex sync.RWMutex
@@ -59,14 +63,7 @@ func (d *InMemoryStorage) Clear() {
 	d.urls = make(map[string]string)
 }
 
-// Функция для сохранения результата сокращения урла
-func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
-	StorageMutex.Lock()
-
-	// сохранили в inmemory мапку
-	d.urls[shortURL] = originalURL
-
-	// далее всю мапку сохраняем в файлик
+func (d *InMemoryStorage) writeStorageToFile() error {
 	fs := FileStorage{
 		Items: make([]FileStorageItem, 0),
 	}
@@ -81,15 +78,44 @@ func (d *InMemoryStorage) SaveURL(shortURL, originalURL string) error {
 	if err != nil {
 		return err
 	}
-
-	StorageMutex.Unlock()
 	return nil
 }
 
-// Функция для получения оригинального урла по сокращенному
-// Если до этого мы не сокращали урл, то вернется ошибка
-func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
+func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) (string, error) {
+	StorageMutex.Lock()
+	defer StorageMutex.Unlock()
+
+	// Проверяем, что пытаемся получить укороченный урл того урла, который уже сокращали до этого
+	for s, o := range d.urls {
+		if o == originalURL {
+			return s, serviceerrors.ErrOrigURLDuplicate
+		}
+	}
+
+	// сохранили в inmemory мапку
+	d.urls[shortURL] = originalURL
+
+	// далее всю мапку сохраняем в файлик
+	return shortURL, d.writeStorageToFile()
+}
+
+func (d *InMemoryStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) error {
+	StorageMutex.Lock()
+	defer StorageMutex.Unlock()
+
+	// сохранили в inmemory мапку
+	for _, u := range urls {
+		d.urls[u.ShortURL] = u.OrigURL
+	}
+
+	// далее всю мапку сохраняем в файлик
+	return d.writeStorageToFile()
+}
+
+func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	StorageMutex.Lock()
 	origURL, ok := d.urls[shortURL]
+	StorageMutex.Unlock()
 	if ok {
 		return origURL, nil
 	}
@@ -97,8 +123,13 @@ func (d *InMemoryStorage) GetOriginalURL(shortURL string) (string, error) {
 	return origURL, fmt.Errorf("failed to find original url by short url = %s", shortURL)
 }
 
-// Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
-func (d *InMemoryStorage) IsExists(shortURL string) bool {
+func (d *InMemoryStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
+	StorageMutex.Lock()
 	_, ok := d.urls[shortURL]
-	return ok
+	StorageMutex.Unlock()
+	return ok, nil
+}
+
+func (d *InMemoryStorage) Close() error {
+	return nil
 }

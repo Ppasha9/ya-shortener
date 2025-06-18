@@ -15,7 +15,7 @@ type API struct {
 	Logger  *slog.Logger
 }
 
-func NewAPI(r *chi.Mux, s *storage.InMemoryStorage, l *slog.Logger) *API {
+func NewAPI(r *chi.Mux, s storage.Storage, l *slog.Logger) *API {
 	api := &API{
 		Router:  r,
 		Service: service.NewService(s),

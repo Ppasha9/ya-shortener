@@ -9,6 +9,7 @@ var (
 	ServerAddr      = flag.String("a", ":8080", "address and port to run server")
 	BaseURL         = flag.String("b", "http://localhost:8080", "base url for returning short urls")
 	FileStoragePath = flag.String("f", "storage.json", "path to the urls storage file")
+	DatabaseDSN     = flag.String("d", "", "DSN for PostgreSQL DB")
 )
 
 func ParseArgs() {
@@ -22,5 +23,9 @@ func ParseArgs() {
 
 	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
 		FileStoragePath = &envFileStoragePath
+	}
+
+	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
+		DatabaseDSN = &envDatabaseDSN
 	}
 }

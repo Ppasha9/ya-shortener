@@ -25,7 +25,7 @@ func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.api.Logger.Info("Getting original url by url_id", "url_id", urlID)
 
-	origURL, err := h.api.Service.GetOriginalURL(urlID)
+	origURL, err := h.api.Service.GetOriginalURL(r.Context(), urlID)
 	if err != nil {
 		h.api.Logger.Error("Failed to get original url by url id", "err", err.Error())
 		http.Error(w, "Failed to get original url by url id", http.StatusInternalServerError)

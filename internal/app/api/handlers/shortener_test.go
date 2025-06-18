@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -22,6 +23,8 @@ func TestShortenerHandler(t *testing.T) {
 	*config.BaseURL = "http://baseurl"
 	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
 	require.NoError(t, err)
+
+	ctx := context.Background()
 
 	tests := []struct {
 		name           string
@@ -98,7 +101,9 @@ func TestShortenerHandler(t *testing.T) {
 				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				require.True(t, st.IsExists(shortURL))
+				exists, err := st.IsExists(ctx, shortURL)
+				require.NoError(t, err)
+				require.True(t, exists)
 			}
 		})
 	}
@@ -108,6 +113,8 @@ func TestShortenHandler(t *testing.T) {
 	*config.BaseURL = "http://baseurl"
 	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
 	require.NoError(t, err)
+
+	ctx := context.Background()
 
 	tests := []struct {
 		name           string
@@ -207,7 +214,9 @@ func TestShortenHandler(t *testing.T) {
 				splitted := strings.Split(resp.Result, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				require.True(t, st.IsExists(shortURL))
+				exists, err := st.IsExists(ctx, shortURL)
+				require.NoError(t, err)
+				require.True(t, exists)
 			}
 		})
 	}

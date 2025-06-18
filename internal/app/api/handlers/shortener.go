@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
@@ -47,18 +50,24 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
-	shortURL, err := h.api.Service.MakeShortURL(origURL)
+	statusCode := http.StatusCreated
+	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_body", origURL)
-		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
-		return
+		if errors.Is(err, serviceerrors.ErrOrigURLDuplicate) {
+			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
+			statusCode = http.StatusConflict
+		} else {
+			h.api.Logger.Error("Failed to generate short url", "req_body", origURL, "err", err.Error())
+			http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	shortURL = *config.BaseURL + "/" + shortURL
 
 	h.api.Logger.Info("Generated short url", "orig_url", origURL, "short_url", shortURL)
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write([]byte(shortURL))
 }
 
@@ -103,11 +112,17 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.api.Logger.Info("Generating short url", "orig_url", origURL)
-	shortURL, err := h.api.Service.MakeShortURL(origURL)
+	statusCode := http.StatusCreated
+	shortURL, err := h.api.Service.MakeShortURL(r.Context(), origURL)
 	if err != nil {
-		h.api.Logger.Error("Failed to generate short url", "req_url", origURL)
-		http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
-		return
+		if errors.Is(err, serviceerrors.ErrOrigURLDuplicate) {
+			h.api.Logger.Error("Trying to shorten certain original url one more time", "req_body", origURL)
+			statusCode = http.StatusConflict
+		} else {
+			h.api.Logger.Error("Failed to generate short url", "req_url", origURL, "err", err.Error())
+			http.Error(w, "Failed to generate short url", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	shortURL = *config.BaseURL + "/" + shortURL
@@ -124,7 +139,74 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add(`Content-Type`, `application/json`)
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	w.Write(respBody)
+}
+
+func (h *handlers) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
+	h.api.Logger.Info("Incoming POST shorten batch request")
+
+	if r.Method != http.MethodPost {
+		// Принимаем только POST запросы
+		h.api.Logger.Error("Invalid method", "method", r.Method)
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Проверяем наличие хэдэра Content-Type и его значение
+	ctHeader := r.Header.Get("Content-Type")
+	if !strings.Contains(ctHeader, "application/json") && !strings.Contains(ctHeader, "application/x-gzip") {
+		h.api.Logger.Error("Invalid Content-Type header", "header_value", ctHeader)
+		http.Error(w, "Invalid Content-Type header", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.api.Logger.Error("Failed to read request body", "err", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var req []model.ShortenBatchItemRequest
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		h.api.Logger.Error("Failed to unmarshal request body", "err", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for _, v := range req {
+		if !isValidURL(v.OrigURL) {
+			h.api.Logger.Error("URL from request isn't valid", "original_url", v.OrigURL, "correlation_id", v.CorrID)
+			http.Error(w, "URL from request isn't valid", http.StatusBadRequest)
+			return
+		}
+	}
+
+	h.api.Logger.Info(fmt.Sprintf("Generating %d short urls", len(req)))
+	resp, err := h.api.Service.MakeShortURLsBatch(r.Context(), req)
+	if err != nil {
+		h.api.Logger.Error("Failed to generate batch of short urls", "batch_size", len(req), "err", err.Error())
+		http.Error(w, "Failed to generate batch of short urls", http.StatusInternalServerError)
+		return
+	}
+
+	for i := range resp {
+		resp[i].ShortURL = *config.BaseURL + "/" + resp[i].ShortURL
+	}
+
+	h.api.Logger.Info("Generated batch of short urls", "batch_size", len(req))
+
+	respBody, err := json.Marshal(&resp)
+	if err != nil {
+		h.api.Logger.Error("Failed to marshal response body", "err", err.Error())
+		http.Error(w, "Failed to marshal response body", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(respBody)
 }

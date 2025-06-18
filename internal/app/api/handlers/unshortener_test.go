@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +19,8 @@ import (
 func TestUnShortenerHandler(t *testing.T) {
 	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
 	require.NoError(t, err)
+
+	ctx := context.Background()
 
 	tests := []struct {
 		name       string
@@ -64,7 +67,7 @@ func TestUnShortenerHandler(t *testing.T) {
 			h.ConfigureRouter()
 
 			if test.origURL != "" {
-				st.SaveURL(test.reqURLID, test.origURL)
+				st.SaveURL(ctx, test.reqURLID, test.origURL)
 			}
 
 			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
