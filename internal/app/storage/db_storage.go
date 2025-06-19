@@ -54,7 +54,7 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 func (db *DatabaseStorage) SaveURL(ctx context.Context, userID uint32, shortURL, originalURL string) (string, error) {
 	_, err := db.DB.ExecContext(ctx, "INSERT INTO shorturls (shorturl, origurl, userid) VALUES ($1, $2, $3);", shortURL, originalURL, userID)
 	if isUniqueViolation(err) {
-		shortURL, err = db.GetShortURL(ctx, userID, originalURL)
+		shortURL, err = db.GetShortURL(ctx, originalURL)
 		if err != nil {
 			return shortURL, err
 		}
@@ -83,9 +83,9 @@ func (db *DatabaseStorage) SaveURLs(ctx context.Context, userID uint32, urls []m
 	return tx.Commit()
 }
 
-func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, userID uint32, shortURL string) (string, error) {
+func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	err := db.DB.QueryRowContext(ctx, "SELECT origurl FROM shorturls WHERE shorturl = $1 AND userid = $2;", shortURL, userID).Scan(&origURL)
+	err := db.DB.QueryRowContext(ctx, "SELECT origurl FROM shorturls WHERE shorturl = $1;", shortURL).Scan(&origURL)
 	if err != nil {
 		return "", err
 	}
@@ -121,9 +121,9 @@ func (db *DatabaseStorage) GetUserURLs(ctx context.Context, userID uint32) ([]mo
 	return res, nil
 }
 
-func (db *DatabaseStorage) GetShortURL(ctx context.Context, userID uint32, origURL string) (string, error) {
+func (db *DatabaseStorage) GetShortURL(ctx context.Context, origURL string) (string, error) {
 	var shortURL string
-	err := db.DB.QueryRowContext(ctx, "SELECT shorturl FROM shorturls WHERE origurl = $1 AND userid = $2;", origURL, userID).Scan(&shortURL)
+	err := db.DB.QueryRowContext(ctx, "SELECT shorturl FROM shorturls WHERE origurl = $1;", origURL).Scan(&shortURL)
 	if err != nil {
 		return "", err
 	}
@@ -131,9 +131,9 @@ func (db *DatabaseStorage) GetShortURL(ctx context.Context, userID uint32, origU
 	return shortURL, nil
 }
 
-func (db *DatabaseStorage) IsExists(ctx context.Context, userID uint32, shortURL string) (bool, error) {
+func (db *DatabaseStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
 	var cnt int
-	err := db.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM shorturls WHERE shorturl = $1 AND userid = $2;", shortURL, userID).Scan(&cnt)
+	err := db.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM shorturls WHERE shorturl = $1;", shortURL).Scan(&cnt)
 	if err != nil {
 		return false, err
 	}

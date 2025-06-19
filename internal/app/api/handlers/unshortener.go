@@ -3,19 +3,11 @@ package handlers
 import (
 	"net/http"
 
-	servicecontext "github.com/Ppasha9/ya-shortener/internal/app/context"
 	"github.com/go-chi/chi"
 )
 
 func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming GET unshortener request")
-
-	userID, err := servicecontext.GetUserID(r.Context())
-	if err != nil {
-		h.api.Logger.Error("Failed to get userID from auth cookie", "err", err.Error())
-		http.Error(w, "Failed to get userID from auth cookie", http.StatusUnauthorized)
-		return
-	}
 
 	if r.Method != http.MethodGet {
 		// Принимаем только GET запросы
@@ -31,16 +23,16 @@ func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.api.Logger.Info("Getting original url by url_id", "userID", userID, "url_id", urlID)
+	h.api.Logger.Info("Getting original url by url_id", "url_id", urlID)
 
-	origURL, err := h.api.Service.GetOriginalURL(r.Context(), userID, urlID)
+	origURL, err := h.api.Service.GetOriginalURL(r.Context(), urlID)
 	if err != nil {
-		h.api.Logger.Error("Failed to get original url by url id", "userID", userID, "url_id", urlID, "err", err.Error())
+		h.api.Logger.Error("Failed to get original url by url id", "url_id", urlID, "err", err.Error())
 		http.Error(w, "Failed to get original url by url id", http.StatusInternalServerError)
 		return
 	}
 
-	h.api.Logger.Info("Got original url by url_id", "userID", userID, "url_id", urlID, "orig_url", origURL)
+	h.api.Logger.Info("Got original url by url_id", "url_id", urlID, "orig_url", origURL)
 
 	w.Header().Add("Location", origURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)

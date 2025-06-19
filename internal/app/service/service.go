@@ -22,7 +22,7 @@ func (s *Service) MakeShortURL(ctx context.Context, userID uint32, origURL strin
 	var shortURL string
 	for {
 		shortURL = urlshortener.MakeShortURL(origURL)
-		exists, err := s.Storage.IsExists(ctx, userID, shortURL)
+		exists, err := s.Storage.IsExists(ctx, shortURL)
 		if err != nil {
 			return shortURL, err
 		}
@@ -34,8 +34,8 @@ func (s *Service) MakeShortURL(ctx context.Context, userID uint32, origURL strin
 	return shortURL, err
 }
 
-func (s *Service) GetOriginalURL(ctx context.Context, userID uint32, shortURL string) (string, error) {
-	return s.Storage.GetOriginalURL(ctx, userID, shortURL)
+func (s *Service) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return s.Storage.GetOriginalURL(ctx, shortURL)
 }
 
 func (s *Service) MakeShortURLsBatch(ctx context.Context, userID uint32, batch []model.ShortenBatchItemRequest) ([]model.ShortenBatchItemResponse, error) {
@@ -45,7 +45,7 @@ func (s *Service) MakeShortURLsBatch(ctx context.Context, userID uint32, batch [
 		var shortURL string
 		for {
 			shortURL = urlshortener.MakeShortURL(v.OrigURL)
-			exists, err := s.Storage.IsExists(ctx, userID, shortURL)
+			exists, err := s.Storage.IsExists(ctx, shortURL)
 			if err != nil {
 				return nil, err
 			}

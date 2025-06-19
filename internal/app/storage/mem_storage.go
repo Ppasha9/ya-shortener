@@ -23,9 +23,14 @@ type FileStorage struct {
 	Items []FileStorageItem `json:"items"`
 }
 
+type InMemoryStorageItem struct {
+	OrigURL string
+	UserID  uint32
+}
+
 type InMemoryStorage struct {
 	fileStoragePath string
-	urls            map[uint32]map[string]string
+	urls            map[string]InMemoryStorageItem
 
 	mutex sync.RWMutex
 }
@@ -46,7 +51,7 @@ func NewInMemoryStorage(fileStoragePath string) (*InMemoryStorage, error) {
 
 	st := &InMemoryStorage{
 		fileStoragePath: fileStoragePath,
-		urls:            make(map[uint32]map[string]string),
+		urls:            make(map[string]InMemoryStorageItem),
 	}
 
 	if errors.Is(err, io.EOF) {
@@ -54,29 +59,22 @@ func NewInMemoryStorage(fileStoragePath string) (*InMemoryStorage, error) {
 	}
 
 	for _, v := range urlsFromFile.Items {
-		_, ok := st.urls[v.UserID]
-		if !ok {
-			st.urls[v.UserID] = make(map[string]string)
-		}
-
-		st.urls[v.UserID][v.ShortURL] = v.OrigURL
+		st.urls[v.ShortURL] = InMemoryStorageItem{OrigURL: v.OrigURL, UserID: v.UserID}
 	}
 
 	return st, nil
 }
 
 func (d *InMemoryStorage) Clear() {
-	d.urls = make(map[uint32]map[string]string)
+	d.urls = make(map[string]InMemoryStorageItem)
 }
 
 func (d *InMemoryStorage) writeStorageToFile() error {
 	fs := FileStorage{
 		Items: make([]FileStorageItem, 0),
 	}
-	for userID := range d.urls {
-		for short, orig := range d.urls[userID] {
-			fs.Items = append(fs.Items, FileStorageItem{ShortURL: short, OrigURL: orig, UserID: userID})
-		}
+	for shortURL := range d.urls {
+		fs.Items = append(fs.Items, FileStorageItem{ShortURL: shortURL, OrigURL: d.urls[shortURL].OrigURL, UserID: d.urls[shortURL].UserID})
 	}
 	data, err := json.MarshalIndent(&fs, "", "   ")
 	if err != nil {
@@ -94,18 +92,14 @@ func (d *InMemoryStorage) SaveURL(ctx context.Context, userID uint32, shortURL, 
 	defer d.mutex.Unlock()
 
 	// Проверяем, что пытаемся получить укороченный урл того урла, который уже сокращали до этого
-	for s, o := range d.urls[userID] {
-		if o == originalURL {
+	for s, v := range d.urls {
+		if v.OrigURL == originalURL {
 			return s, serviceerrors.ErrOrigURLDuplicate
 		}
 	}
 
 	// сохранили в inmemory мапку
-	_, ok := d.urls[userID]
-	if !ok {
-		d.urls[userID] = make(map[string]string)
-	}
-	d.urls[userID][shortURL] = originalURL
+	d.urls[shortURL] = InMemoryStorageItem{OrigURL: originalURL, UserID: userID}
 
 	// далее всю мапку сохраняем в файлик
 	return shortURL, d.writeStorageToFile()
@@ -116,31 +110,23 @@ func (d *InMemoryStorage) SaveURLs(ctx context.Context, userID uint32, urls []mo
 	defer d.mutex.Unlock()
 
 	// сохранили в inmemory мапку
-	_, ok := d.urls[userID]
-	if !ok {
-		d.urls[userID] = make(map[string]string)
-	}
 	for _, u := range urls {
-		d.urls[userID][u.ShortURL] = u.OrigURL
+		d.urls[u.ShortURL] = InMemoryStorageItem{OrigURL: u.OrigURL, UserID: userID}
 	}
 
 	// далее всю мапку сохраняем в файлик
 	return d.writeStorageToFile()
 }
 
-func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, userID uint32, shortURL string) (string, error) {
+func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	_, ok := d.urls[userID]
-	if !ok {
-		return "", fmt.Errorf("failed to find original url by short url = %s", shortURL)
-	}
-	origURL, ok := d.urls[userID][shortURL]
+	v, ok := d.urls[shortURL]
 	if ok {
-		return origURL, nil
+		return v.OrigURL, nil
 	}
-	return origURL, fmt.Errorf("failed to find original url by short url = %s", shortURL)
+	return "", fmt.Errorf("failed to find original url by short url = %s", shortURL)
 }
 
 func (d *InMemoryStorage) GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error) {
@@ -148,27 +134,22 @@ func (d *InMemoryStorage) GetUserURLs(ctx context.Context, userID uint32) ([]mod
 	defer d.mutex.Unlock()
 
 	res := make([]model.URLsPair, 0)
-	_, ok := d.urls[userID]
-	if !ok {
-		return res, nil
-	}
+	for s, v := range d.urls {
+		if v.UserID != userID {
+			continue
+		}
 
-	for s, o := range d.urls[userID] {
-		res = append(res, model.URLsPair{ShortURL: s, OrigURL: o})
+		res = append(res, model.URLsPair{ShortURL: s, OrigURL: v.OrigURL})
 	}
 
 	return res, nil
 }
 
-func (d *InMemoryStorage) IsExists(ctx context.Context, userID uint32, shortURL string) (bool, error) {
+func (d *InMemoryStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	_, ok := d.urls[userID]
-	if !ok {
-		return false, nil
-	}
-	_, ok = d.urls[userID][shortURL]
+	_, ok := d.urls[shortURL]
 	return ok, nil
 }
 

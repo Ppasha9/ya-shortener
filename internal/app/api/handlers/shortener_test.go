@@ -120,7 +120,7 @@ func TestShortenerHandler(t *testing.T) {
 				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				exists, err := st.IsExists(ctx, test.userID, shortURL)
+				exists, err := st.IsExists(ctx, shortURL)
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
@@ -262,7 +262,7 @@ func TestShortenHandler(t *testing.T) {
 				splitted := strings.Split(resp.Result, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				exists, err := st.IsExists(ctx, test.userID, shortURL)
+				exists, err := st.IsExists(ctx, shortURL)
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
