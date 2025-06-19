@@ -97,8 +97,6 @@ func TestShortenerHandler(t *testing.T) {
 			authCookie := &http.Cookie{
 				Name:     "access_token",
 				Value:    authCookieVal,
-				Path:     "/",
-				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(time.Hour),
@@ -228,8 +226,6 @@ func TestShortenHandler(t *testing.T) {
 			authCookie := &http.Cookie{
 				Name:     "access_token",
 				Value:    authCookieVal,
-				Path:     "/",
-				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(time.Hour),

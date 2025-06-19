@@ -45,8 +45,6 @@ func WithAuthCheck(h http.Handler, authService *auth.Auth, logger *slog.Logger) 
 			http.SetCookie(w, &http.Cookie{
 				Name:     authCookieName,
 				Value:    token,
-				Path:     "/",
-				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(authService.TokenTTL),
