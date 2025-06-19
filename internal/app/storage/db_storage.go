@@ -93,6 +93,34 @@ func (db *DatabaseStorage) GetOriginalURL(ctx context.Context, userID uint32, sh
 	return origURL, nil
 }
 
+func (db *DatabaseStorage) GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error) {
+	res := make([]model.URLsPair, 0)
+	rows, err := db.DB.QueryContext(ctx, "SELECT shorturl, origurl FROM shorturls WHERE userid = $1", userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return res, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var v model.URLsPair
+		err = rows.Scan(&v.ShortURL, &v.OrigURL)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, v)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (db *DatabaseStorage) GetShortURL(ctx context.Context, userID uint32, origURL string) (string, error) {
 	var shortURL string
 	err := db.DB.QueryRowContext(ctx, "SELECT shorturl FROM shorturls WHERE origurl = $1 AND userid = $2;", origURL, userID).Scan(&shortURL)

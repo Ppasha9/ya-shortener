@@ -61,3 +61,7 @@ func (s *Service) MakeShortURLsBatch(ctx context.Context, userID uint32, batch [
 	err := s.Storage.SaveURLs(ctx, userID, urls)
 	return resp, err
 }
+
+func (s *Service) GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error) {
+	return s.Storage.GetUserURLs(ctx, userID)
+}

@@ -19,6 +19,6 @@ type ShortenBatchItemResponse struct {
 }
 
 type URLsPair struct {
-	ShortURL string
-	OrigURL  string
+	ShortURL string `json:"short_url"`
+	OrigURL  string `json:"original_url"`
 }

@@ -143,6 +143,23 @@ func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, userID uint32, sho
 	return origURL, fmt.Errorf("failed to find original url by short url = %s", shortURL)
 }
 
+func (d *InMemoryStorage) GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	res := make([]model.URLsPair, 0)
+	_, ok := d.urls[userID]
+	if !ok {
+		return res, nil
+	}
+
+	for s, o := range d.urls[userID] {
+		res = append(res, model.URLsPair{ShortURL: s, OrigURL: o})
+	}
+
+	return res, nil
+}
+
 func (d *InMemoryStorage) IsExists(ctx context.Context, userID uint32, shortURL string) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()

@@ -17,6 +17,10 @@ type Storage interface {
 	// Если до этого мы не сокращали урл, то вернется ошибка
 	GetOriginalURL(ctx context.Context, userID uint32, shortURL string) (string, error)
 
+	// Функция, которая возвращает все пары урлов, которые определенный юзера сокращал до этого
+	// В случае, когда юзер еще никакие урыл не сокращал, должен вернуться пустой слайс без ошибки
+	GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error)
+
 	// Функция, которая проверяет есть ли уже такой сгенерированный короткий урл в нашей "БД"
 	IsExists(ctx context.Context, userID uint32, shortURL string) (bool, error)
 
