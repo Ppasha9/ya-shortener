@@ -13,8 +13,6 @@ import (
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
 
-var StorageMutex sync.RWMutex
-
 type FileStorageItem struct {
 	ShortURL string `json:"short_url"`
 	OrigURL  string `json:"orig_url"`
@@ -27,6 +25,8 @@ type FileStorage struct {
 type InMemoryStorage struct {
 	fileStoragePath string
 	urls            map[string]string
+
+	mutex sync.RWMutex
 }
 
 func NewInMemoryStorage(fileStoragePath string) (*InMemoryStorage, error) {
@@ -82,8 +82,8 @@ func (d *InMemoryStorage) writeStorageToFile() error {
 }
 
 func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL string) (string, error) {
-	StorageMutex.Lock()
-	defer StorageMutex.Unlock()
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	// Проверяем, что пытаемся получить укороченный урл того урла, который уже сокращали до этого
 	for s, o := range d.urls {
@@ -100,8 +100,8 @@ func (d *InMemoryStorage) SaveURL(ctx context.Context, shortURL, originalURL str
 }
 
 func (d *InMemoryStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) error {
-	StorageMutex.Lock()
-	defer StorageMutex.Unlock()
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	// сохранили в inmemory мапку
 	for _, u := range urls {
@@ -113,9 +113,9 @@ func (d *InMemoryStorage) SaveURLs(ctx context.Context, urls []model.URLsPair) e
 }
 
 func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	StorageMutex.Lock()
+	d.mutex.Lock()
 	origURL, ok := d.urls[shortURL]
-	StorageMutex.Unlock()
+	d.mutex.Unlock()
 	if ok {
 		return origURL, nil
 	}
@@ -124,9 +124,9 @@ func (d *InMemoryStorage) GetOriginalURL(ctx context.Context, shortURL string) (
 }
 
 func (d *InMemoryStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
-	StorageMutex.Lock()
+	d.mutex.Lock()
 	_, ok := d.urls[shortURL]
-	StorageMutex.Unlock()
+	d.mutex.Unlock()
 	return ok, nil
 }
 

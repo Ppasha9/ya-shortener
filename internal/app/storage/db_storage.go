@@ -104,13 +104,13 @@ func (db *DatabaseStorage) GetShortURL(ctx context.Context, origURL string) (str
 }
 
 func (db *DatabaseStorage) IsExists(ctx context.Context, shortURL string) (bool, error) {
-	var exists bool
-	err := db.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM shorturls WHERE shorturl = $1);", shortURL).Scan(&exists)
+	var cnt int
+	err := db.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM shorturls WHERE shorturl = $1;", shortURL).Scan(&cnt)
 	if err != nil {
 		return false, err
 	}
 
-	return exists, nil
+	return cnt > 0, nil
 }
 
 func (db *DatabaseStorage) Close() error {
