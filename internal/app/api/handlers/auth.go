@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/crypt"
@@ -29,17 +30,20 @@ func (h *handlers) genUserIDAndSetCookie(w *http.ResponseWriter) (uint32, error)
 	return userID, nil
 }
 
-func (h *handlers) getUserIDFromCookie(w *http.ResponseWriter, r *http.Request) (uint32, error) {
+func (h *handlers) getUserIDFromCookie(w *http.ResponseWriter, r *http.Request, logger *slog.Logger) (uint32, error) {
 	authCookie, err := r.Cookie(authCookieName)
 
 	// если куки нет, то мы должны сгенерировать новый userID и новую куку
 	if err != nil {
+		logger.Info("No auth cookie found, generate new.")
 		userID, err := h.genUserIDAndSetCookie(w)
 		if err != nil {
 			return userID, err
 		}
 		return userID, nil
 	}
+
+	logger.Info("Auth cookie found.", "val", authCookie.Value)
 
 	// если кука есть, надо проверить ее валидность
 	// 1. Если кука невалидна, то нужно сгенерить новый userID и новую куку

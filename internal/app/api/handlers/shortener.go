@@ -20,7 +20,7 @@ func isValidURL(url string) bool {
 func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shortener request")
 
-	userID, err := h.getUserIDFromCookie(&w, r)
+	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
 	if err != nil {
 		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
 			h.api.Logger.Error("Auth cookie doesn't contain user id")
@@ -87,7 +87,7 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shorten request")
 
-	userID, err := h.getUserIDFromCookie(&w, r)
+	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
 	if err != nil {
 		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
 			h.api.Logger.Error("Auth cookie doesn't contain user id")
@@ -173,7 +173,7 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shorten batch request")
 
-	userID, err := h.getUserIDFromCookie(&w, r)
+	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
 	if err != nil {
 		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
 			h.api.Logger.Error("Auth cookie doesn't contain user id")

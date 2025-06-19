@@ -12,7 +12,7 @@ import (
 func (h *handlers) UrlsHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming GET urls request")
 
-	userID, err := h.getUserIDFromCookie(&w, r)
+	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
 	if err != nil {
 		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
 			h.api.Logger.Error("Auth cookie doesn't contain user id")

@@ -11,7 +11,7 @@ import (
 func (h *handlers) UnShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming GET unshortener request")
 
-	userID, err := h.getUserIDFromCookie(&w, r)
+	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
 	if err != nil {
 		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
 			h.api.Logger.Error("Auth cookie doesn't contain user id")
