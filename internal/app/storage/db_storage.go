@@ -43,7 +43,7 @@ func NewDatabase(conn string) (*DatabaseStorage, error) {
 	}
 
 	// Создаем уникальный индекс на поле с исходным урлом
-	_, err = dbConn.Exec("CREATE UNIQUE INDEX IF NOT EXISTS unique_orig_url_idx ON shorturls (userid, origurl);")
+	_, err = dbConn.Exec("CREATE UNIQUE INDEX IF NOT EXISTS unique_orig_url_idx ON shorturls (origurl);")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create unique index: %w", err)
 	}
