@@ -32,7 +32,7 @@ func (h *handlers) getUserIDFromCookie(w *http.ResponseWriter, r *http.Request, 
 
 	// если куки нет, то мы должны сгенерировать новый userID и новую куку
 	if err != nil {
-		logger.Info("No auth cookie found, generate new.")
+		logger.Info("No auth cookie found, generate new.", "err", err.Error())
 		userID, err := h.genUserIDAndSetCookie(w)
 		if err != nil {
 			return userID, err
