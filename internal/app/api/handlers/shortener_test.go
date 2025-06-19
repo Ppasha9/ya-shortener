@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/auth"
@@ -91,16 +92,18 @@ func TestShortenerHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			authCookie, err := auth.NewJWT(test.userID)
+			authCookieVal, err := auth.NewJWT(test.userID)
 			require.NoError(t, err)
-			http.SetCookie(w, &http.Cookie{
+			authCookie := &http.Cookie{
 				Name:     "access_token",
-				Value:    authCookie,
+				Value:    authCookieVal,
 				Path:     "/",
 				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
-			})
+				Expires:  time.Now().Add(time.Hour),
+			}
+			request.AddCookie(authCookie)
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -124,16 +127,6 @@ func TestShortenerHandler(t *testing.T) {
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
-
-			http.SetCookie(w, &http.Cookie{
-				Name:     "access_token",
-				Value:    "",
-				Path:     "/",
-				Secure:   true,
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-				MaxAge:   -1,
-			})
 		})
 	}
 }
@@ -230,16 +223,18 @@ func TestShortenHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			authCookie, err := auth.NewJWT(test.userID)
+			authCookieVal, err := auth.NewJWT(test.userID)
 			require.NoError(t, err)
-			http.SetCookie(w, &http.Cookie{
+			authCookie := &http.Cookie{
 				Name:     "access_token",
-				Value:    authCookie,
+				Value:    authCookieVal,
 				Path:     "/",
 				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
-			})
+				Expires:  time.Now().Add(time.Hour),
+			}
+			request.AddCookie(authCookie)
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -266,16 +261,6 @@ func TestShortenHandler(t *testing.T) {
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
-
-			http.SetCookie(w, &http.Cookie{
-				Name:     "access_token",
-				Value:    "",
-				Path:     "/",
-				Secure:   true,
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-				MaxAge:   -1,
-			})
 		})
 	}
 }

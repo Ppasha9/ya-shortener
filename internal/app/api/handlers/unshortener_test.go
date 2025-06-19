@@ -7,11 +7,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/auth"
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
+
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,16 +84,18 @@ func TestUnShortenerHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			authCookie, err := auth.NewJWT(test.userID)
+			authCookieVal, err := auth.NewJWT(test.userID)
 			require.NoError(t, err)
-			http.SetCookie(w, &http.Cookie{
+			authCookie := &http.Cookie{
 				Name:     "access_token",
-				Value:    authCookie,
+				Value:    authCookieVal,
 				Path:     "/",
 				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
-			})
+				Expires:  time.Now().Add(time.Hour),
+			}
+			request.AddCookie(authCookie)
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -105,16 +109,6 @@ func TestUnShortenerHandler(t *testing.T) {
 				require.NotEmpty(t, resLoc)
 				assert.Equal(t, test.origURL, resLoc)
 			}
-
-			http.SetCookie(w, &http.Cookie{
-				Name:     "access_token",
-				Value:    "",
-				Path:     "/",
-				Secure:   true,
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-				MaxAge:   -1,
-			})
 		})
 	}
 }
