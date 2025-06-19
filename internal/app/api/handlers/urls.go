@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Ppasha9/ya-shortener/internal/app/config"
 	servicecontext "github.com/Ppasha9/ya-shortener/internal/app/context"
 )
 
@@ -38,6 +39,10 @@ func (h *handlers) UrlsHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info(fmt.Sprintf("Got %d urls for user", len(userURLs)), "userID", userID)
 	if len(userURLs) == 0 {
 		statusCode = http.StatusNoContent
+	}
+
+	for i := range userURLs {
+		userURLs[i].ShortURL = *config.BaseURL + "/" + userURLs[i].ShortURL
 	}
 
 	respBody, err := json.Marshal(&userURLs)
