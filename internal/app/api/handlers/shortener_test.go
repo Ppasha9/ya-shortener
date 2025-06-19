@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
+	"github.com/Ppasha9/ya-shortener/internal/app/auth"
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
-	"github.com/Ppasha9/ya-shortener/internal/app/crypt"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
@@ -77,12 +77,12 @@ func TestShortenerHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			c, err := crypt.NewCrypt()
+			auth, err := auth.NewAuth()
 			require.NoError(t, err)
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, st, c, logger)
+			api := api.NewAPI(r, st, auth, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -91,9 +91,10 @@ func TestShortenerHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			authCookie := c.GenerateAuthCookie(test.userID)
+			authCookie, err := auth.NewJWT(test.userID)
+			require.NoError(t, err)
 			http.SetCookie(w, &http.Cookie{
-				Name:     "auth_cookie",
+				Name:     "access_token",
 				Value:    authCookie,
 				Path:     "/",
 				Secure:   true,
@@ -125,12 +126,13 @@ func TestShortenerHandler(t *testing.T) {
 			}
 
 			http.SetCookie(w, &http.Cookie{
-				Name:     "auth_cookie",
+				Name:     "access_token",
 				Value:    "",
 				Path:     "/",
 				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
+				MaxAge:   -1,
 			})
 		})
 	}
@@ -214,12 +216,12 @@ func TestShortenHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			c, err := crypt.NewCrypt()
+			auth, err := auth.NewAuth()
 			require.NoError(t, err)
 
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, st, c, logger)
+			api := api.NewAPI(r, st, auth, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -228,9 +230,10 @@ func TestShortenHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			authCookie := c.GenerateAuthCookie(test.userID)
+			authCookie, err := auth.NewJWT(test.userID)
+			require.NoError(t, err)
 			http.SetCookie(w, &http.Cookie{
-				Name:     "auth_cookie",
+				Name:     "access_token",
 				Value:    authCookie,
 				Path:     "/",
 				Secure:   true,
@@ -265,12 +268,13 @@ func TestShortenHandler(t *testing.T) {
 			}
 
 			http.SetCookie(w, &http.Cookie{
-				Name:     "auth_cookie",
+				Name:     "access_token",
 				Value:    "",
 				Path:     "/",
 				Secure:   true,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
+				MaxAge:   -1,
 			})
 		})
 	}

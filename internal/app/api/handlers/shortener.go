@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	servicecontext "github.com/Ppasha9/ya-shortener/internal/app/context"
 	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 )
@@ -20,14 +21,8 @@ func isValidURL(url string) bool {
 func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shortener request")
 
-	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
+	userID, err := servicecontext.GetUserID(r.Context())
 	if err != nil {
-		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
-			h.api.Logger.Error("Auth cookie doesn't contain user id")
-			http.Error(w, "Auth cookie doesn't contain user id", http.StatusUnauthorized)
-			return
-		}
-
 		h.api.Logger.Error("Failed to get userID from auth cookie", "err", err.Error())
 		http.Error(w, "Failed to get userID from auth cookie", http.StatusUnauthorized)
 		return
@@ -87,14 +82,8 @@ func (h *handlers) ShortenerHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shorten request")
 
-	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
+	userID, err := servicecontext.GetUserID(r.Context())
 	if err != nil {
-		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
-			h.api.Logger.Error("Auth cookie doesn't contain user id")
-			http.Error(w, "Auth cookie doesn't contain user id", http.StatusUnauthorized)
-			return
-		}
-
 		h.api.Logger.Error("Failed to get userID from auth cookie", "err", err.Error())
 		http.Error(w, "Failed to get userID from auth cookie", http.StatusUnauthorized)
 		return
@@ -173,14 +162,8 @@ func (h *handlers) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlers) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming POST shorten batch request")
 
-	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
+	userID, err := servicecontext.GetUserID(r.Context())
 	if err != nil {
-		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
-			h.api.Logger.Error("Auth cookie doesn't contain user id")
-			http.Error(w, "Auth cookie doesn't contain user id", http.StatusUnauthorized)
-			return
-		}
-
 		h.api.Logger.Error("Failed to get userID from auth cookie", "err", err.Error())
 		http.Error(w, "Failed to get userID from auth cookie", http.StatusUnauthorized)
 		return

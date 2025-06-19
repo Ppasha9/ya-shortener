@@ -2,24 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
-	serviceerrors "github.com/Ppasha9/ya-shortener/internal/app/errors"
+	servicecontext "github.com/Ppasha9/ya-shortener/internal/app/context"
 )
 
 func (h *handlers) UrlsHandler(w http.ResponseWriter, r *http.Request) {
 	h.api.Logger.Info("Incoming GET urls request")
 
-	userID, err := h.getUserIDFromCookie(&w, r, h.api.Logger)
+	userID, err := servicecontext.GetUserID(r.Context())
 	if err != nil {
-		if errors.Is(err, serviceerrors.ErrInvalidAuthCookieBytesLen) {
-			h.api.Logger.Error("Auth cookie doesn't contain user id")
-			http.Error(w, "Auth cookie doesn't contain user id", http.StatusUnauthorized)
-			return
-		}
-
 		h.api.Logger.Error("Failed to get userID from auth cookie", "err", err.Error())
 		http.Error(w, "Failed to get userID from auth cookie", http.StatusUnauthorized)
 		return
