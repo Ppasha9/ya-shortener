@@ -18,7 +18,7 @@ func NewService(s storage.Storage) *Service {
 	}
 }
 
-func (s *Service) MakeShortURL(ctx context.Context, origURL string) (string, error) {
+func (s *Service) MakeShortURL(ctx context.Context, userID uint32, origURL string) (string, error) {
 	var shortURL string
 	for {
 		shortURL = urlshortener.MakeShortURL(origURL)
@@ -30,7 +30,7 @@ func (s *Service) MakeShortURL(ctx context.Context, origURL string) (string, err
 			break
 		}
 	}
-	shortURL, err := s.Storage.SaveURL(ctx, shortURL, origURL)
+	shortURL, err := s.Storage.SaveURL(ctx, userID, shortURL, origURL)
 	return shortURL, err
 }
 
@@ -38,7 +38,7 @@ func (s *Service) GetOriginalURL(ctx context.Context, shortURL string) (string, 
 	return s.Storage.GetOriginalURL(ctx, shortURL)
 }
 
-func (s *Service) MakeShortURLsBatch(ctx context.Context, batch []model.ShortenBatchItemRequest) ([]model.ShortenBatchItemResponse, error) {
+func (s *Service) MakeShortURLsBatch(ctx context.Context, userID uint32, batch []model.ShortenBatchItemRequest) ([]model.ShortenBatchItemResponse, error) {
 	urls := make([]model.URLsPair, 0)
 	resp := make([]model.ShortenBatchItemResponse, 0)
 	for _, v := range batch {
@@ -58,6 +58,10 @@ func (s *Service) MakeShortURLsBatch(ctx context.Context, batch []model.ShortenB
 		resp = append(resp, model.ShortenBatchItemResponse{CorrID: v.CorrID, ShortURL: shortURL})
 	}
 
-	err := s.Storage.SaveURLs(ctx, urls)
+	err := s.Storage.SaveURLs(ctx, userID, urls)
 	return resp, err
+}
+
+func (s *Service) GetUserURLs(ctx context.Context, userID uint32) ([]model.URLsPair, error) {
+	return s.Storage.GetUserURLs(ctx, userID)
 }

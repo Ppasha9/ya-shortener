@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -12,14 +14,14 @@ import (
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/auth"
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	"github.com/Ppasha9/ya-shortener/internal/app/model"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 
 	"github.com/go-chi/chi"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnShortenerHandler(t *testing.T) {
+func TestUrlsHandler(t *testing.T) {
 	st, err := storage.NewInMemoryStorage(*config.FileStoragePath)
 	require.NoError(t, err)
 
@@ -28,35 +30,40 @@ func TestUnShortenerHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		reqMethod  string
-		reqURLID   string
 		userID     uint32
-		origURL    string
+		userURLs   []model.URLsPair
 		respCode   int
 		isPositive bool
 	}{
 		{
 			name:       "invalid request method",
 			reqMethod:  http.MethodPost,
-			reqURLID:   "unknown_url_id",
 			userID:     1,
 			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
 		{
-			name:       "valid request method, unknown url id",
+			name:       "valid request method, user has no urls",
 			reqMethod:  http.MethodGet,
-			reqURLID:   "unknown_url_id",
 			userID:     1,
-			respCode:   http.StatusInternalServerError,
+			respCode:   http.StatusNoContent,
 			isPositive: false,
 		},
 		{
-			name:       "valid request method, known url id -> 307 redirect",
-			reqMethod:  http.MethodGet,
-			reqURLID:   "known_url_id",
-			userID:     1,
-			origURL:    "https://yandex.ru",
-			respCode:   http.StatusTemporaryRedirect,
+			name:      "valid request method, known url id -> 307 redirect",
+			reqMethod: http.MethodGet,
+			userID:    1,
+			userURLs: []model.URLsPair{
+				{
+					ShortURL: "dfuy45bn",
+					OrigURL:  "https://yandex.ru",
+				},
+				{
+					ShortURL: "ls53ot65",
+					OrigURL:  "https://practicum.yandex.ru",
+				},
+			},
+			respCode:   http.StatusOK,
 			isPositive: true,
 		},
 	}
@@ -76,11 +83,11 @@ func TestUnShortenerHandler(t *testing.T) {
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
-			if test.origURL != "" {
-				st.SaveURL(ctx, test.userID, test.reqURLID, test.origURL)
+			if len(test.userURLs) > 0 {
+				st.SaveURLs(ctx, test.userID, test.userURLs)
 			}
 
-			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
+			request, _ := http.NewRequest(test.reqMethod, "/api/user/urls", nil)
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
@@ -103,9 +110,14 @@ func TestUnShortenerHandler(t *testing.T) {
 
 			// проверяем значение хэдэра Location в ответе
 			if test.isPositive {
-				resLoc := res.Header.Get("Location")
-				require.NotEmpty(t, resLoc)
-				assert.Equal(t, test.origURL, resLoc)
+				resBody, err := io.ReadAll(res.Body)
+				require.NoError(t, err)
+
+				var resp []model.URLsPair
+				err = json.Unmarshal(resBody, &resp)
+				require.NoError(t, err)
+
+				require.Equal(t, len(resp), len(test.userURLs))
 			}
 		})
 	}
