@@ -19,12 +19,9 @@ func (h *handlers) genUserIDAndSetCookie(w *http.ResponseWriter) (uint32, error)
 
 	cookieVal := h.api.Crypt.GenerateAuthCookie(userID)
 	http.SetCookie(*w, &http.Cookie{
-		Name:     authCookieName,
-		Value:    cookieVal,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Name:  authCookieName,
+		Value: cookieVal,
+		Path:  "/",
 	})
 
 	return userID, nil
