@@ -66,8 +66,8 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func WithCompress(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func WithCompress(h http.Handler) http.Handler {
+	compressFn := func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -99,4 +99,6 @@ func WithCompress(h http.HandlerFunc) http.HandlerFunc {
 
 		h.ServeHTTP(ow, r)
 	}
+
+	return http.HandlerFunc(compressFn)
 }

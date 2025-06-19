@@ -13,6 +13,7 @@ import (
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	"github.com/Ppasha9/ya-shortener/internal/app/crypt"
 	"github.com/Ppasha9/ya-shortener/internal/app/model"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
@@ -31,12 +32,14 @@ func TestShortenerHandler(t *testing.T) {
 		reqMethod      string
 		reqContentType string
 		reqURL         string
+		userID         uint32
 		respCode       int
 		isPositive     bool
 	}{
 		{
 			name:       "invalid request method",
 			reqMethod:  http.MethodGet,
+			userID:     1,
 			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
@@ -44,6 +47,7 @@ func TestShortenerHandler(t *testing.T) {
 			name:           "valid request method, but invalid content_type",
 			reqMethod:      http.MethodPost,
 			reqContentType: "application/json",
+			userID:         1,
 			respCode:       http.StatusUnsupportedMediaType,
 			isPositive:     false,
 		},
@@ -52,6 +56,7 @@ func TestShortenerHandler(t *testing.T) {
 			reqMethod:      http.MethodPost,
 			reqContentType: "text/plain",
 			reqURL:         "some_url_without_protocol",
+			userID:         1,
 			respCode:       http.StatusBadRequest,
 			isPositive:     false,
 		},
@@ -60,6 +65,7 @@ func TestShortenerHandler(t *testing.T) {
 			reqMethod:      http.MethodPost,
 			reqContentType: "text/plain",
 			reqURL:         "https://some_url_with_protocol",
+			userID:         1,
 			respCode:       http.StatusCreated,
 			isPositive:     true,
 		},
@@ -71,9 +77,12 @@ func TestShortenerHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+			c, err := crypt.NewCrypt()
+			require.NoError(t, err)
+
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, st, logger)
+			api := api.NewAPI(r, st, c, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -82,6 +91,15 @@ func TestShortenerHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
+			authCookie := c.GenerateAuthCookie(test.userID)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    authCookie,
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -101,10 +119,19 @@ func TestShortenerHandler(t *testing.T) {
 				splitted := strings.Split(resURL, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				exists, err := st.IsExists(ctx, shortURL)
+				exists, err := st.IsExists(ctx, test.userID, shortURL)
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    "",
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 		})
 	}
 }
@@ -121,12 +148,14 @@ func TestShortenHandler(t *testing.T) {
 		reqMethod      string
 		reqContentType string
 		req            string
+		userID         uint32
 		respCode       int
 		isPositive     bool
 	}{
 		{
 			name:       "invalid request method",
 			reqMethod:  http.MethodGet,
+			userID:     1,
 			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
@@ -134,6 +163,7 @@ func TestShortenHandler(t *testing.T) {
 			name:           "valid request method, but invalid content_type",
 			reqMethod:      http.MethodPost,
 			reqContentType: "text/plain",
+			userID:         1,
 			respCode:       http.StatusUnsupportedMediaType,
 			isPositive:     false,
 		},
@@ -146,6 +176,7 @@ func TestShortenHandler(t *testing.T) {
 				"url": 123123
 			}
 			`,
+			userID:     1,
 			respCode:   http.StatusBadRequest,
 			isPositive: false,
 		},
@@ -158,6 +189,7 @@ func TestShortenHandler(t *testing.T) {
 				"url": "invalid_url"
 			}
 			`,
+			userID:     1,
 			respCode:   http.StatusBadRequest,
 			isPositive: false,
 		},
@@ -170,6 +202,7 @@ func TestShortenHandler(t *testing.T) {
 				"url": "https://some_url_with_protocol"
 			}
 			`,
+			userID:     1,
 			respCode:   http.StatusCreated,
 			isPositive: true,
 		},
@@ -181,9 +214,12 @@ func TestShortenHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+			c, err := crypt.NewCrypt()
+			require.NoError(t, err)
+
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, st, logger)
+			api := api.NewAPI(r, st, c, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
@@ -192,6 +228,15 @@ func TestShortenHandler(t *testing.T) {
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
+			authCookie := c.GenerateAuthCookie(test.userID)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    authCookie,
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -214,10 +259,19 @@ func TestShortenHandler(t *testing.T) {
 				splitted := strings.Split(resp.Result, "/")
 				shortURL := splitted[len(splitted)-1]
 
-				exists, err := st.IsExists(ctx, shortURL)
+				exists, err := st.IsExists(ctx, test.userID, shortURL)
 				require.NoError(t, err)
 				require.True(t, exists)
 			}
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    "",
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 		})
 	}
 }

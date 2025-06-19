@@ -10,6 +10,7 @@ import (
 
 	"github.com/Ppasha9/ya-shortener/internal/app/api"
 	"github.com/Ppasha9/ya-shortener/internal/app/config"
+	"github.com/Ppasha9/ya-shortener/internal/app/crypt"
 	"github.com/Ppasha9/ya-shortener/internal/app/storage"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,7 @@ func TestUnShortenerHandler(t *testing.T) {
 		name       string
 		reqMethod  string
 		reqURLID   string
+		userID     uint32
 		origURL    string
 		respCode   int
 		isPositive bool
@@ -34,6 +36,7 @@ func TestUnShortenerHandler(t *testing.T) {
 			name:       "invalid request method",
 			reqMethod:  http.MethodPost,
 			reqURLID:   "unknown_url_id",
+			userID:     1,
 			respCode:   http.StatusMethodNotAllowed,
 			isPositive: false,
 		},
@@ -41,6 +44,7 @@ func TestUnShortenerHandler(t *testing.T) {
 			name:       "valid request method, unknown url id",
 			reqMethod:  http.MethodGet,
 			reqURLID:   "unknown_url_id",
+			userID:     1,
 			respCode:   http.StatusInternalServerError,
 			isPositive: false,
 		},
@@ -48,6 +52,7 @@ func TestUnShortenerHandler(t *testing.T) {
 			name:       "valid request method, known url id -> 307 redirect",
 			reqMethod:  http.MethodGet,
 			reqURLID:   "known_url_id",
+			userID:     1,
 			origURL:    "https://yandex.ru",
 			respCode:   http.StatusTemporaryRedirect,
 			isPositive: true,
@@ -60,20 +65,32 @@ func TestUnShortenerHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+			c, err := crypt.NewCrypt()
+			require.NoError(t, err)
+
 			// инициализируем api
 			r := chi.NewRouter()
-			api := api.NewAPI(r, st, logger)
+			api := api.NewAPI(r, st, c, logger)
 			h := NewHandlers(api)
 			h.ConfigureRouter()
 
 			if test.origURL != "" {
-				st.SaveURL(ctx, test.reqURLID, test.origURL)
+				st.SaveURL(ctx, test.userID, test.reqURLID, test.origURL)
 			}
 
 			request, _ := http.NewRequest(test.reqMethod, "/"+test.reqURLID, nil)
 
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
+			authCookie := c.GenerateAuthCookie(test.userID)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    authCookie,
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 			api.Router.ServeHTTP(w, request)
 
 			res := w.Result()
@@ -87,6 +104,15 @@ func TestUnShortenerHandler(t *testing.T) {
 				require.NotEmpty(t, resLoc)
 				assert.Equal(t, test.origURL, resLoc)
 			}
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "auth_cookie",
+				Value:    "",
+				Path:     "/",
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
 		})
 	}
 }
